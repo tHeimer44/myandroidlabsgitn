@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Note: You must use the following id's for this list of UI Components defined in
+	  JokeView.java
+	  	UI Component 					Required Resource ID
+	  	....................................................
+	    Button m_vwExpandButton: 		"expandButton"
+		RadioButton m_vwLikeButton: 	"likeButton"
+		RadioButton m_vwDislikeButton: 	"dislikeButton"
+		RadioGroup m_vwLikeGroup: 		"ratingRadioGroup"
+		TextView m_vwJokeText: 			"jokeTextView"
+-->
+
+<!--
+	 This Root element is only here as a place holder to prevent compilation
+     errors. Feel free to remove it and replace it with whatever you like.
+-->
+<FrameLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/linearLayout1"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:id="@+id/linearLayout2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" >
+
+            <Button
+                android:id="@+id/expandButton"
+                android:layout_width="35dp"
+                android:layout_height="46dp"
+                android:text="-"
+                android:textSize="20px"
+                 android:focusable="false" />
+
+            <TextView
+                android:id="@+id/jokeTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="5px"
+                android:paddingTop="5px"
+                android:text=""
+                android:focusable="false" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linearLayout3"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" 
+            android:gravity="center">
+
+            <RadioGroup
+                android:id="@+id/ratingRadioGroup"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center" >
+
+                <RadioButton
+                    android:id="@+id/likeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="like" 
+                    android:paddingRight="20px"
+                    android:focusable="false"/>
+                
+                <LinearLayout
+                    android:layout_width="50px"
+                    android:gravity="center"> 
+                    </LinearLayout>
+
+                <RadioButton
+                    android:id="@+id/dislikeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="dislike"
+                    android:paddingRight="20px" 
+                     android:focusable="false"/>
+            </RadioGroup>
+
+        </LinearLayout>
+
+    </LinearLayout>
+    
+</FrameLayout>
