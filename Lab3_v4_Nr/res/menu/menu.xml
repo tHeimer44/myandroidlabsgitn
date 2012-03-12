@@ -38,4 +38,5 @@
                   android:title="@string/show_all_menuitem" android:checkable="true" android:checked="false" android:visible="true" android:enabled="true"/>
         </menu>
     </item>
+    <item android:id="@+id/download_menuitem" android:enabled="true" android:checkable="false" android:visible="true" android:titleCondensed="@string/download_menuitem" android:checked="false"></item>
 </menu>

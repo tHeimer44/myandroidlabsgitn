@@ -12,6 +12,7 @@
             </intent-filter>
         </activity>
     </application>
+    <uses-permission android:name="android.permission.INTERNET"></uses-permission>
     <uses-sdk android:minSdkVersion="4" />
     <instrumentation android:name="android.test.InstrumentationTestRunner"
                      android:targetPackage="edu.calpoly.android.lab3"

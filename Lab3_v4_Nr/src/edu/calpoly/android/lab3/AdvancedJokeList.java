@@ -1,10 +1,15 @@
 package edu.calpoly.android.lab3;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
@@ -21,6 +26,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
+import android.widget.Toast;
 
 public class AdvancedJokeList extends Activity implements OnMenuItemClickListener {
 
@@ -177,7 +183,9 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 		// TODO Auto-generated method stub
 		super.onCreateContextMenu(menu, v, menuInfo);
 		menu.add(Menu.NONE, REMOVE_JOKE_MENUITEM, Menu.NONE, getResources().getString(R.string.remove_menuitem));
+		menu.add(Menu.NONE, UPLOAD_JOKE_MENUITEM, Menu.NONE, getResources().getString(R.string.upload_menuitem));
 		menu.getItem(0).setOnMenuItemClickListener(this);
+		menu.getItem(1).setOnMenuItemClickListener(this);
 
 	}
 	
@@ -194,6 +202,37 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 	 */
 	protected void getJokesFromServer() {
 		// TODO
+		try {
+		String JokeUrl="http://simexusa.com/aac/getAllJokes.php?";
+		
+		JokeUrl += "&author=";
+		JokeUrl += java.net.URLEncoder.encode(getResources().getString(R.string.author_name));
+		
+		URL url = new java.net.URL(JokeUrl);
+		Log.d("str", JokeUrl);
+		java.util.Scanner Sca = new java.util.Scanner(new InputStreamReader(url.openStream()));
+		Sca.useDelimiter("\n");
+		Log.d("str", "2");
+		String s="";
+		Log.d("str", s);
+		String st;
+		Log.d("strB", st=""+Sca.hasNextLine());
+		while (Sca.hasNextLine()) {
+	        // str is one line of text; readLine() strips the newline character(s)
+			s=Sca.nextLine();
+			addJoke(new Joke(s,m_strAuthorName));
+			Log.d("str", s);
+	   }
+		
+	}
+	catch (MalformedURLException e) {
+		// TODO: handle exception
+		e.printStackTrace();
+	}
+		catch (IOException e) { 
+			// TODO: handle exception
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -216,16 +255,61 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 	 */
 	protected void uploadJokeToServer(Joke joke) {
 		// TODO
+		String str = null;
+	try {
+			
+		String JokeUrl="http://simexusa.com/aac/addOneJoke.php?joke=";
+		JokeUrl += java.net.URLEncoder.encode(joke.getJoke());
+		JokeUrl += "&author=";
+		JokeUrl += java.net.URLEncoder.encode(joke.getAuthor());
+		Log.d("df", JokeUrl);
+			// Create a URL for the desired page
+			URL url = new java.net.URL(JokeUrl);
+
+			// Read all the text returned by the server
+			java.util.Scanner Sca = new java.util.Scanner(new InputStreamReader(url.openStream()));
+			
+			str="";
+			while (Sca.hasNextLine()) {
+		        // str is one line of text; readLine() strips the newline character(s)
+				str+= Sca.nextLine();
+		   }
+			
+			
+			
+
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	Log.d("Str", str);
+	
+		if (str.equals("1 record added")) {
+			str = "Upload Succeeded!";
+		} else {
+			str = "Upload Failed!";
+		}
+		Toast.makeText(getApplicationContext(), str, Toast.LENGTH_SHORT).show();
+
 	}
 
 	@Override
 	public boolean onMenuItemClick(MenuItem item) {
 		// TODO Auto-generated method stub
-	
+		switch (item.getItemId()) {
+        case REMOVE_JOKE_MENUITEM:
 		m_arrJokeList.remove(m_jokeAdapter.getSelectedPosition());
 		m_jokeAdapter.notifyDataSetChanged();
 		return false;
+        case UPLOAD_JOKE_MENUITEM:
+    		uploadJokeToServer(m_arrJokeList.get(m_jokeAdapter.getSelectedPosition()));
+    	return false;
+		}
+		return false;
 	}
+	
+	
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -255,6 +339,9 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
         	m_jokeAdapter.SetFilter(0);
         	m_jokeAdapter.notifyDataSetChanged();
             return true;
+        case R.id.download_menuitem:
+        	getJokesFromServer();
+            return true;   
         default:
             return super.onOptionsItemSelected(item);
     }

@@ -24,6 +24,7 @@ public final class R {
         public static final int addJokeButton=0x7f080001;
         public static final int dislikeButton=0x7f08000a;
         public static final int dislike_menuitem=0x7f08000d;
+        public static final int download_menuitem=0x7f080010;
         public static final int expandButton=0x7f080005;
         public static final int filter_menuitem=0x7f08000b;
         public static final int jokeListViewGroup=0x7f080003;
