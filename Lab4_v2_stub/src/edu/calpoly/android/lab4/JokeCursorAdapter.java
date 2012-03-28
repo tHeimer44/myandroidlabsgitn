@@ -4,6 +4,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.CursorAdapter;
 import android.widget.AdapterView.OnItemLongClickListener;
@@ -39,6 +40,8 @@ public class JokeCursorAdapter extends CursorAdapter implements OnItemLongClickL
 		super(context, jokeCursor);
 		
 		// TODO
+		m_listener=null;
+		m_nSelectedID=Adapter.NO_SELECTION;
 	}
 
 	/**
@@ -50,7 +53,7 @@ public class JokeCursorAdapter extends CursorAdapter implements OnItemLongClickL
 	 */
 	public long getSelectedID() {
 		// TODO
-		return 0;
+		return m_nSelectedID;
 	}
 
 	/**
@@ -61,11 +64,14 @@ public class JokeCursorAdapter extends CursorAdapter implements OnItemLongClickL
 	 */
 	public void setOnJokeChangeListener(OnJokeChangeListener mListener) {
 		// TODO
+		
+		m_listener=mListener;
 	}
 
 	@Override
 	public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
 		// TODO
+		m_nSelectedID=id;
 		return false;
 	}
 
@@ -73,11 +79,17 @@ public class JokeCursorAdapter extends CursorAdapter implements OnItemLongClickL
 	public void bindView(View view, Context context, Cursor cursor) {
 		// TODO Auto-generated method stub
 		
+		JokeView jokeView=(JokeView) view;
+		jokeView.setJoke(JokeDBAdapter.getJokeFromCursor(cursor));
+		jokeView.setOnJokeChangeListener(m_listener);
 	}
 
 	@Override
 	public View newView(Context context, Cursor cursor, ViewGroup parent) {
 		// TODO Auto-generated method stub
-		return null;
+		JokeView jokeView= new JokeView(context, JokeDBAdapter.getJokeFromCursor(cursor));
+		jokeView.setOnJokeChangeListener(m_listener);
+		return jokeView;
+		
 	}
 }

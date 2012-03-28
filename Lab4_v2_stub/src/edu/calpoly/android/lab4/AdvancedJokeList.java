@@ -9,18 +9,22 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import android.R.integer;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.SubMenu;
 import android.view.View;
-import android.view.ContextMenu.ContextMenuInfo;
-import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.view.inputmethod.InputMethodManager;
@@ -29,7 +33,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public class AdvancedJokeList extends Activity implements OnMenuItemClickListener  {
+public class AdvancedJokeList extends Activity implements OnMenuItemClickListener,JokeView.OnJokeChangeListener  {
 
 	/**
 	 * Contains the name of the Author for the jokes.
@@ -39,13 +43,13 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 	/**
 	 * Contains the list of Jokes the Activity will present to the user.
 	 **/
-	protected ArrayList<Joke> m_arrJokeList;
+	protected Cursor m_arrJokeList;
 	protected ArrayList<Joke> m_arrFilteredJokeList;
 
 	/**
 	 * Adapter used to bind an AdapterView to List of Jokes.
 	 */
-	protected JokeListAdapter m_jokeAdapter;
+	protected JokeCursorAdapter m_jokeAdapter;
 
 	/**
 	 * ViewGroup used for maintaining a list of Views that each display Jokes.
@@ -112,22 +116,29 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 		m_strAuthorName = res.getString(R.string.author_name);
 
 		// Initialize the list of jokes from the strings.xml resource file
+		m_jokeDB= new JokeDBAdapter(this);
+		m_jokeDB.open();
 		m_nFilter = SHOW_ALL;
-		m_arrJokeList = new ArrayList<Joke>();
-		m_arrFilteredJokeList = new ArrayList<Joke>();
-
-		m_jokeAdapter = new JokeListAdapter(this, m_arrFilteredJokeList);
+		m_arrJokeList = m_jokeDB.getAllJokes();
+		//m_arrFilteredJokeList = new ArrayList<Joke>();
+		startManagingCursor(m_arrJokeList);
+		
+		m_jokeAdapter = new JokeCursorAdapter(this, m_arrJokeList);
+		m_jokeAdapter.setOnJokeChangeListener(this);
 		m_vwJokeLayout.setAdapter(m_jokeAdapter);
 		m_vwJokeLayout.setOnItemLongClickListener(m_jokeAdapter);
 		registerForContextMenu(m_vwJokeLayout);
 
-		String[] resJokes = res.getStringArray(R.array.jokeList);
+	/*	String[] resJokes = res.getStringArray(R.array.jokeList);
 		for (int ndx = 0; ndx < resJokes.length; ndx++) {
 			addJoke(new Joke(resJokes[ndx], m_strAuthorName));
-		}
+		}*/
 
 		// Initialize the "Add Joke" listeners
 		initAddJokeListeners();
+		
+		SharedPreferences sharePreferSettings = getPreferences(MODE_PRIVATE);
+		m_vwJokeEditText.setText(sharePreferSettings.getString(SAVED_EDIT_TEXT, ""));
 	}
 
 	/**
@@ -185,11 +196,8 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 	 *            The Joke to add to list of Jokes.
 	 */
 	protected void addJoke(Joke joke) {
-		// Add joke
-		m_arrJokeList.add(joke);
-		m_arrFilteredJokeList.add(joke);
-		m_jokeAdapter.notifyDataSetChanged();
-
+		m_jokeDB.insertJoke(joke);
+		m_arrJokeList.requery();
 		// Hide Soft Keyboard
 		InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.hideSoftInputFromWindow(m_vwJokeEditText.getWindowToken(), 0);
@@ -263,9 +271,9 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 		item.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			@Override
 			public boolean onMenuItemClick(MenuItem arg0) {
-				Joke joke = m_arrFilteredJokeList.remove(m_jokeAdapter
-						.getSelectedPosition());
-				m_arrJokeList.remove(joke);
+				
+				m_jokeDB.removeJoke(m_jokeAdapter.getSelectedID());
+				m_arrJokeList.requery();
 				m_jokeAdapter.notifyDataSetChanged();
 				return true;
 			}
@@ -275,8 +283,7 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 		item.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			@Override
 			public boolean onMenuItemClick(MenuItem arg0) {
-				uploadJokeToServer(m_arrFilteredJokeList.get(m_jokeAdapter
-						.getSelectedPosition()));
+				uploadJokeToServer(m_jokeDB.getJoke(m_jokeAdapter.getSelectedID()));
 				return true;
 			}
 		});
@@ -318,7 +325,7 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 
 	@Override
 	public boolean onMenuItemClick(MenuItem item) {
-		int filterVal = 0;
+		Integer filterVal = 0;
 		int ndx = 0;
 		Joke joke = null;
 
@@ -326,21 +333,22 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 
 		// Set the filter value
 		if (item.getItemId() == LIKE) {
+			setAndUpdateFilter(filterVal.toString());
 			filterVal = Joke.LIKE;
 		} else if (item.getItemId() == DISLIKE) {
 			filterVal = Joke.DISLIKE;
+			setAndUpdateFilter(filterVal.toString());
 		} else if (item.getItemId() == UNRATED) {
 			filterVal = Joke.UNRATED;
+			setAndUpdateFilter(filterVal.toString());
 		} else if (item.getItemId() == SHOW_ALL) {
-			filterVal = Joke.LIKE;
-			filterVal |= Joke.DISLIKE;
-			filterVal |= Joke.UNRATED;
+			setAndUpdateFilter(null);
 		}
 
 		// Update the filter
 		m_nFilter = item.getItemId();
 
-		// Update the list of filtered Jokes
+		/* // Update the list of filtered Jokes
 		m_arrFilteredJokeList.clear();
 		for (ndx = 0; ndx < m_arrJokeList.size(); ndx++) {
 			// If the rating on the Joke matches the filter, add it to the list.
@@ -348,7 +356,7 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 			if ((joke.getRating() & filterVal) != 0) {
 				m_arrFilteredJokeList.add(joke);
 			}
-		}
+		} */
 		m_jokeAdapter.notifyDataSetChanged();
 		return true;
 	}
@@ -367,7 +375,53 @@ public class AdvancedJokeList extends Activity implements OnMenuItemClickListene
 	 * 			  get displayed. This should be one of four filter MenuItem ID 
 	 * 			  values: LIKE, DISLIKE, SHOW_ALL, or UNRATED. 
 	 */
-	protected void setAndUpdateFilter(int newFilterVal) {
+	protected void setAndUpdateFilter(String newFilterVal) {
 		// TODO	
+		
+		stopManagingCursor(m_arrJokeList);
+		m_arrJokeList.close();
+		
+		m_arrJokeList=m_jokeDB.getAllJokes(newFilterVal);
+		
+		m_jokeAdapter.notifyDataSetChanged();
+		this.startManagingCursor(m_arrJokeList);
+		m_jokeAdapter.changeCursor(m_arrJokeList);
 	}
+	
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		// TODO Auto-generated method stub
+		super.onSaveInstanceState(outState);
+		outState.putInt(SAVED_FILTER_VALUE, m_nFilter);
+	}
+	 
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onRestoreInstanceState(savedInstanceState);
+		if ((savedInstanceState!=null)&&(savedInstanceState.containsKey(SAVED_FILTER_VALUE))){
+			m_nFilter=savedInstanceState.getInt(SAVED_FILTER_VALUE);
+			setAndUpdateFilter(Integer.toString(m_nFilter));
+		}
+	}
+	
+	@Override
+	protected void onPause() {
+		// TODO Auto-generated method stub
+		super.onPause();
+		SharedPreferences sharePrefSetttings= getPreferences(MODE_PRIVATE);
+		SharedPreferences.Editor editor =sharePrefSetttings.edit();
+		editor.putString(SAVED_EDIT_TEXT, m_vwJokeEditText.getText().toString());
+		editor.commit();
+	}
+
+	@Override
+	public void onJokeChanged(JokeView view, Joke joke) {
+		// TODO Auto-generated method stub
+		m_jokeDB.updateJoke(joke);
+		m_arrJokeList.requery();
+		
+		
+	}
+	
 }

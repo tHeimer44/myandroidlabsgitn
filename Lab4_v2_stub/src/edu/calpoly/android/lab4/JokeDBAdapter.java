@@ -3,11 +3,9 @@ package edu.calpoly.android.lab4;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
-import android.util.Log;
+import android.database.sqlite.SQLiteOpenHelper;
 
 public class JokeDBAdapter {
 
@@ -65,6 +63,7 @@ public class JokeDBAdapter {
 	 */
 	public JokeDBAdapter(Context context) {
 		// TODO
+		m_dbHelper= new JokeDBHelper(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
 	
 	/**
@@ -72,6 +71,7 @@ public class JokeDBAdapter {
 	 */
 	public void open() {
 		// TODO
+		m_db=m_dbHelper.getWritableDatabase();
 	}
 	
 	/**
@@ -79,6 +79,7 @@ public class JokeDBAdapter {
 	 */
 	public void close() {
 		// TODO
+		m_db.close();
 	}
 	
 	/**
@@ -92,7 +93,12 @@ public class JokeDBAdapter {
 	 */
 	public long insertJoke(Joke joke) {
 		// TODO
-		return 0;
+		ContentValues value=new ContentValues();
+		value.put(JOKE_KEY_TEXT, joke.getJoke());
+		value.put(JOKE_KEY_AUTHOR, joke.getAuthor());
+		value.put(JOKE_KEY_RATING, joke.getRating());
+		return m_db.insert(DATABASE_TABLE_JOKE, null, value);
+		
 	}
 	
 	/**
@@ -112,7 +118,16 @@ public class JokeDBAdapter {
 	 */
 	public Cursor getAllJokes(String ratingFilter) {
 		// TODO
-		return null;
+		String[] columnTable={JOKE_KEY_ID,JOKE_KEY_TEXT,JOKE_KEY_RATING,JOKE_KEY_AUTHOR};
+		String selectString=null;
+		if (ratingFilter!=null){
+			selectString= JOKE_KEY_RATING + "=" + ratingFilter;
+			return m_db.query(DATABASE_TABLE_JOKE, columnTable, selectString, null, null, null, null);
+		}
+		else
+		{
+			return m_db.query(DATABASE_TABLE_JOKE, columnTable, selectString, null, null, null, null);
+		} 
 	}
 	
 	/**
@@ -122,7 +137,7 @@ public class JokeDBAdapter {
 	 */
 	public Cursor getAllJokes() {
 		// TODO
-		return null;
+		return getAllJokes(null);
 	}
 	
 	/**
@@ -139,7 +154,16 @@ public class JokeDBAdapter {
 	 */
 	public static Joke getJokeFromCursor(Cursor cursor) {
 		// TODO
-		return null;
+		if ((cursor==null)||(cursor.getCount()<1)){ 
+			return null;
+		}
+		else
+		{
+				Joke joke=new Joke(cursor.getString(JOKE_COL_TEXT),cursor.getString(JOKE_COL_AUTHOR),cursor.getInt(JOKE_COL_RATING),cursor.getInt(JOKE_COL_ID));
+			
+				return joke;
+		}
+		
 	}
 	
 	/**
@@ -155,6 +179,13 @@ public class JokeDBAdapter {
 	 */
 	public Joke getJoke(long id) {
 		// TODO
+		if (id >= 0){
+			String selection=JOKE_KEY_ID+"=" +id;
+			String[] columns={JOKE_KEY_ID,JOKE_KEY_TEXT,JOKE_KEY_RATING,JOKE_KEY_AUTHOR};
+			Cursor cursor= m_db.query(DATABASE_TABLE_JOKE, columns, selection, null, null, null, null);
+			cursor.moveToNext();
+			return getJokeFromCursor(cursor);
+		}
 		return null;
 	}	
 	
@@ -169,6 +200,9 @@ public class JokeDBAdapter {
 	 */
 	public boolean removeJoke(long id) {		
 		// TODO
+		String whereClause= JOKE_KEY_ID+'='+ id;
+		
+		m_db.delete(DATABASE_TABLE_JOKE, whereClause, null);
 		return false;
 	}
 	
@@ -185,6 +219,13 @@ public class JokeDBAdapter {
 	 */
 	public boolean updateJoke(Joke joke) {
 		// TODO
+		ContentValues value = new ContentValues();
+		value.put(JOKE_KEY_TEXT, joke.getJoke());
+		value.put(JOKE_KEY_AUTHOR, joke.getAuthor());
+		value.put(JOKE_KEY_RATING, joke.getRating());
+		String whereClause= JOKE_KEY_ID+'='+ joke.getID();
+		m_db.update(DATABASE_TABLE_JOKE, value, whereClause, null);
+		
 		return false;
 	}
 
@@ -208,6 +249,7 @@ public class JokeDBAdapter {
 		@Override
 		public void onCreate(SQLiteDatabase _db) {
 			// TODO
+			_db.execSQL(DATABASE_CREATE);
 		}
 
 		/**
@@ -222,6 +264,8 @@ public class JokeDBAdapter {
 		@Override
 		public void onUpgrade(SQLiteDatabase _db, int _oldVersion, int _newVersion) {
 			// TODO
+			_db.execSQL(DATABASE_DROP);
+			_db.execSQL(DATABASE_CREATE); //onCreate(_db); //old variant
 		}
 
 	}

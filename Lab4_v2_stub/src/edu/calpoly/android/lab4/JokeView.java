@@ -9,9 +9,9 @@ import android.widget.Button;
 import android.widget.Checkable;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.RadioGroup.OnCheckedChangeListener;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.RadioGroup.OnCheckedChangeListener;
 
 public class JokeView extends RelativeLayout implements OnClickListener, OnCheckedChangeListener, Checkable{
 
@@ -55,6 +55,8 @@ public class JokeView extends RelativeLayout implements OnClickListener, OnCheck
 		m_vwDislikeButton = (RadioButton)findViewById(R.id.dislikeButton);
 		
 		m_vwJokeText= (TextView)findViewById(R.id.jokeTextView);
+		
+		m_onJokeChangeListener=null;
 		
 		setJoke(joke);
 		
@@ -135,6 +137,7 @@ public class JokeView extends RelativeLayout implements OnClickListener, OnCheck
 		else if (checkedId == -1) {
 			m_joke.setRating(Joke.UNRATED);
 		}
+		notifyOnJokeChangeListener(); //--lab4
 	}
 
 	@Override
@@ -175,6 +178,8 @@ public class JokeView extends RelativeLayout implements OnClickListener, OnCheck
 	 */
 	public void setOnJokeChangeListener(OnJokeChangeListener listener) {
 		// TODO
+		
+		m_onJokeChangeListener= listener;
 	}
 
 	/**
@@ -190,6 +195,9 @@ public class JokeView extends RelativeLayout implements OnClickListener, OnCheck
 	 */
 	protected void notifyOnJokeChangeListener() {
 		// TODO
+		if (m_onJokeChangeListener!= null){
+			 m_onJokeChangeListener.onJokeChanged(this,m_joke);
+		}
 	}
 
 	/**
